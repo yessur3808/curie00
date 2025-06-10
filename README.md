@@ -17,15 +17,15 @@ E - Entity: Denoting AI as a distinct and functional unit.
 
 - Python 3.8 or higher
 - `python-telegram-bot`
-- `transformers`
-- `torch`
+
+
 
 ## Setup
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/telegram_ai_assistant.git
-    cd telegram_ai_assistant
+    git clone https://github.com/yessur3808/curie00.git
+    cd curie00
     ```
 
 2. Install the dependencies:
@@ -39,7 +39,13 @@ E - Entity: Denoting AI as a distinct and functional unit.
 
 5. Run the bot:
     ```sh
-    python3 main.py
+        python main.py
+    ```
+
+    or
+
+    ```sh
+        python3 main.py
     ```
 
 ### Virtual env setup
