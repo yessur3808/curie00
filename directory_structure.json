@@ -1,0 +1,112 @@
+{
+  "type": "directory",
+  "name": "",
+  "contents": [
+    {
+      "type": "directory",
+      "name": ".cache",
+      "contents": [
+        {
+          "type": "directory",
+          "name": "huggingface",
+          "contents": [
+            {
+              "type": "directory",
+              "name": "download",
+              "contents": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "directory",
+      "name": "assets",
+      "contents": [
+        {
+          "type": "file",
+          "name": "example_persona.json"
+        },
+        {
+          "type": "file",
+          "name": "persona.json"
+        }
+      ]
+    },
+    {
+      "type": "directory",
+      "name": "connectors",
+      "contents": [
+        {
+          "type": "file",
+          "name": "telegram.py"
+        }
+      ]
+    },
+    {
+      "type": "directory",
+      "name": "models",
+      "contents": [
+        {
+          "type": "directory",
+          "name": ".cache",
+          "contents": [
+            {
+              "type": "directory",
+              "name": "huggingface",
+              "contents": [
+                {
+                  "type": "directory",
+                  "name": "download",
+                  "contents": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "directory",
+      "name": "scripts",
+      "contents": [
+        {
+          "type": "file",
+          "name": "dir_structure.py"
+        }
+      ]
+    },
+    {
+      "type": "file",
+      "name": "agent.py"
+    },
+    {
+      "type": "file",
+      "name": "config.py"
+    },
+    {
+      "type": "file",
+      "name": "directory_structure.json"
+    },
+    {
+      "type": "file",
+      "name": "directory_structure.md"
+    },
+    {
+      "type": "file",
+      "name": "llm_manager.py"
+    },
+    {
+      "type": "file",
+      "name": "main.py"
+    },
+    {
+      "type": "file",
+      "name": "README.md"
+    },
+    {
+      "type": "file",
+      "name": "requirements.txt"
+    }
+  ]
+}

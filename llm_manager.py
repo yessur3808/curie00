@@ -1,27 +1,42 @@
 # llm_manager.py
 
+import os
+from dotenv import load_dotenv
+
+try:
+    from llama_cpp import Llama
+except ImportError:
+    Llama = None
+
 import config
 
-# Uncomment if using OpenAI
-# import openai
+# Load environment variables from .env
+load_dotenv()
 
-# Uncomment if using llama-cpp-python or similar
-# from llama_cpp import Llama
+# Parse models from .env (comma-separated list)
+models_env = os.getenv("LLM_MODELS", "")
+AVAILABLE_MODELS = [m.strip() for m in models_env.split(",") if m.strip()]
+
+# Fallback default if nothing set in .env
+DEFAULT_LLAMA_MODEL = AVAILABLE_MODELS[0] if AVAILABLE_MODELS else "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf"
 
 # Load LLM config at module level (or pass in as needed)
 llm_config = config.load_config().get('llm', {})
 
-# Example: For OpenAI API
-def ask_llm(prompt):
+# Cache for loaded llama models
+llama_models_cache = {}
+
+def ask_llm(prompt, model_name=None):
     """
     Send a prompt to the LLM and return its response.
-    Adjust for your chosen LLM provider.
+    Optionally specify model_name (must be in AVAILABLE_MODELS).
     """
-    provider = llm_config.get('provider', 'openai')
+    provider = llm_config.get('provider', 'llama.cpp')
 
     if provider == 'openai':
-        # Uncomment and set up as needed
+        # Example OpenAI API usage (uncomment and fill in if you want)
         """
+        import openai
         openai.api_key = llm_config['openai_api_key']
         response = openai.ChatCompletion.create(
             model=llm_config.get('model', 'gpt-3.5-turbo'),
@@ -29,18 +44,56 @@ def ask_llm(prompt):
         )
         return response.choices[0].message['content'].strip()
         """
-        # Placeholder for demonstration
         return f"[OpenAI simulated response to]: {prompt}"
 
     elif provider == 'llama.cpp':
-        # Uncomment and configure if using local Llama
-        """
-        llm = Llama(model_path=llm_config['model_path'])
-        result = llm(prompt, max_tokens=256)
-        return result['choices'][0]['text'].strip()
-        """
-        # Placeholder for demonstration
-        return f"[Llama.cpp simulated response to]: {prompt}"
+        if Llama is None:
+            return "[llama-cpp-python not installed. Please install it with 'pip install llama-cpp-python']"
+
+        # Decide which model filename to use
+        selected_model = model_name or llm_config.get('model_path') or DEFAULT_LLAMA_MODEL
+        if selected_model not in AVAILABLE_MODELS:
+            return f"[Model not found in AVAILABLE_MODELS: {selected_model}]"
+        model_path = os.path.join("models", selected_model)
+
+        if not os.path.exists(model_path):
+            return f"[Model file not found: {model_path}]"
+
+        # Lazy-load and cache each model separately
+        if selected_model not in llama_models_cache:
+            try:
+                llama_models_cache[selected_model] = Llama(
+                    model_path=model_path,
+                    n_ctx=2048,
+                    n_threads=4
+                )
+            except Exception as e:
+                return f"[Error loading model: {e}]"
+        llama_model = llama_models_cache[selected_model]
+
+        # Run inference
+        try:
+            result = llama_model(
+                prompt,
+                max_tokens=512,
+                stop=["</s>", "User:", "user:"],
+                temperature=llm_config.get("temperature", 0.7)
+            )
+            if isinstance(result, dict) and "choices" in result:
+                return result["choices"][0]["text"].strip()
+            elif hasattr(result, "choices"):
+                return result.choices[0].text.strip()
+            else:
+                return str(result)
+        except Exception as e:
+            return f"[Error during inference: {e}]"
 
     else:
         return "[Error: Unsupported LLM provider]"
+
+
+def get_available_models():
+    """
+    Returns the list of available model filenames.
+    """
+    return AVAILABLE_MODELS

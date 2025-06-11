@@ -1,3 +1,4 @@
 # Core Libraries
 python-telegram-bot==21.4
 python-dotenv
+llama-cpp-python
