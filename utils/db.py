@@ -1,4 +1,4 @@
-
+# utils/db.py
 
 def is_master_user(internal_id):
     with get_pg_conn() as conn:

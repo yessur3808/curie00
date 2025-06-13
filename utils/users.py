@@ -1,3 +1,5 @@
+# utils/users.py
+
 import memory_manager
 
 def get_or_create_internal_id_for_platform(platform, external_id, secret_username, updated_by, is_master=False, roles=None):

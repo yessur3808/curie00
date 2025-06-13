@@ -1,21 +1,38 @@
 # connectors/telegram.py
 
-from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
-from agent import Agent
 import os
 from dotenv import load_dotenv
 
-from utils.persona import load_persona       
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
+from agent.core import Agent
 
-MASTER_USER_ID = os.getenv("MASTER_USER_ID")
+from utils.persona import load_persona
+from utils.session import (
+    set_busy_temporarily,
+    is_user_busy,
+    clear_user_busy,
+    small_talk_chance,
+)
+
 import memory_manager
-
-
-user_session_map = {}  # Maps telegram user_id to internal_id
 
 load_dotenv()
 
+MASTER_USER_ID = os.getenv("MASTER_USER_ID")
+
+# Maps telegram user_id to internal_id for this session
+user_session_map = {}
+
+# Small talk prompts for Curie
+SMALL_TALK_QUESTIONS = [
+    "By the way, what do you enjoy doing in your free time?",
+    "Is there something new you've learned recently, mon ami?",
+    "Do you have a favorite book or movie?",
+    "What are you curious about these days?",
+    "If you could travel anywhere, where would you go?",
+    "C'est intéressant! Do you have any hobbies you love?",
+]
 
 async def handle_identify(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tg_user_id = update.message.from_user.id
@@ -36,67 +53,35 @@ async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     greeting = context.bot_data['agent'].persona.get("greeting", "Hello!")
     await update.message.reply_text(greeting)
 
+async def handle_busy(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tg_user_id = update.message.from_user.id
+    set_busy_temporarily(tg_user_id)
+    await update.message.reply_text(
+        "D'accord! I'll let you focus for a while. I'll check in again later, mon ami."
+    )
+
+async def handle_resume(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tg_user_id = update.message.from_user.id
+    clear_user_busy(tg_user_id)
+    await update.message.reply_text(
+        "Bienvenue! I'm here and ready to chat again. 😊"
+    )
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     tg_user_id = update.message.from_user.id
 
-    # Check if the user has identified themselves this session
-    internal_id = user_session_map.get(tg_user_id)
-    if not internal_id:
-        # fallback to Telegram-based lookup/creation
-        telegram_username = update.message.from_user.username or f"telegram_{tg_user_id}"
-        internal_id = memory_manager.get_or_create_user_internal_id(
-            channel='telegram',
-            external_id=tg_user_id,
-            secret_username=telegram_username,
-            updated_by='telegram_bot'
-        )
-
-    agent_response = context.bot_data['agent'].handle_message(user_message, internal_id=internal_id)
-    await update.message.reply_text(agent_response)
-
-# connectors/telegram.py
-
-from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
-from agent import Agent
-import os
-from dotenv import load_dotenv
-
-from utils.persona import load_persona       
-
-MASTER_USER_ID = os.getenv("MASTER_USER_ID")
-import memory_manager
-
-
-user_session_map = {}  # Maps telegram user_id to internal_id
-
-load_dotenv()
-
-
-async def handle_identify(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    tg_user_id = update.message.from_user.id
-    args = context.args if hasattr(context, 'args') else []
-    if not args:
-        await update.message.reply_text("Usage: /identify <your_secret_username>")
+    # Natural language triggers for busy/resume
+    message_lc = user_message.lower().strip()
+    if message_lc in ["stop i am busy", "i am busy", "stop"]:
+        set_busy_temporarily(tg_user_id)
+        await update.message.reply_text("D'accord! I'll give you some space for now.")
+        return
+    if message_lc in ["resume", "i am free", "continue"]:
+        clear_user_busy(tg_user_id)
+        await update.message.reply_text("Heureuse de te retrouver! (Glad to have you back!)")
         return
 
-    secret_username = args[0]
-    internal_id = memory_manager.get_internal_id_by_secret_username(secret_username)
-    if internal_id:
-        user_session_map[tg_user_id] = internal_id
-        await update.message.reply_text(f"✅ Identity linked to secret_username `{secret_username}`.")
-    else:
-        await update.message.reply_text("❌ No user found with that secret_username.")
-
-async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    greeting = context.bot_data['agent'].persona.get("greeting", "Hello!")
-    await update.message.reply_text(greeting)
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_message = update.message.text
-    tg_user_id = update.message.from_user.id
-
     # Check if the user has identified themselves this session
     internal_id = user_session_map.get(tg_user_id)
     if not internal_id:
@@ -111,6 +96,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     agent_response = context.bot_data['agent'].handle_message(user_message, internal_id=internal_id)
     await update.message.reply_text(agent_response)
+
+    # Small talk logic: only send if not "busy" (or much less likely if busy)
+    import random
+    if random.random() < small_talk_chance(tg_user_id):
+        small_talk = context.bot_data['agent'].generate_small_talk(internal_id)
+        if small_talk:
+            await update.message.reply_text(small_talk)
 
 async def handle_clear_memory(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tg_user_id = update.message.from_user.id
@@ -137,7 +129,6 @@ async def handle_clear_memory(update: Update, context: ContextTypes.DEFAULT_TYPE
         memory_manager.clear_conversation(internal_id)
         await update.message.reply_text("🧹 Your conversational memory has been cleared.")
 
-
 def start_telegram_bot():
     telegram_token = os.getenv('TELEGRAM_BOT_TOKEN')
     if not telegram_token:
@@ -151,6 +142,8 @@ def start_telegram_bot():
 
     app.add_handler(CommandHandler("start", handle_start))
     app.add_handler(CommandHandler("identify", handle_identify))
+    app.add_handler(CommandHandler("busy", handle_busy))
+    app.add_handler(CommandHandler("resume", handle_resume))
     app.add_handler(CommandHandler("clear_memory", handle_clear_memory))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 

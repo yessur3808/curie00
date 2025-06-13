@@ -1,3 +1,5 @@
+#llm_manager.py
+
 import os
 from dotenv import load_dotenv
 
@@ -26,7 +28,31 @@ llm_config = {
 # Cache for loaded llama models
 llama_models_cache = {}
 
-def ask_llm(prompt, model_name=None):
+
+def preload_llama_model():
+    """
+    Loads the default Llama model into memory at startup.
+    Should be called ONCE before any ask_llm calls.
+    """
+    provider = llm_config.get('provider', 'llama.cpp')
+    if provider != 'llama.cpp':
+        return  # Only preload local Llama models
+
+    selected_model = llm_config.get('model_path') or DEFAULT_LLAMA_MODEL
+    if selected_model not in AVAILABLE_MODELS:
+        raise RuntimeError(f"Model {selected_model} not in AVAILABLE_MODELS")
+    model_path = os.path.join("models", selected_model)
+    if not os.path.exists(model_path):
+        raise FileNotFoundError(f"Model file not found: {model_path}")
+
+    if selected_model not in llama_models_cache:
+        llama_models_cache[selected_model] = Llama(
+            model_path=model_path,
+            n_ctx=2048,
+            n_threads=18  # Adjust to your CPU
+        )
+
+def ask_llm(prompt, model_name=None, temperature=0.7, max_tokens=128):
     provider = llm_config.get('provider', 'llama.cpp')
 
     if provider == 'openai':
@@ -49,7 +75,7 @@ def ask_llm(prompt, model_name=None):
                 llama_models_cache[selected_model] = Llama(
                     model_path=model_path,
                     n_ctx=2048,
-                    n_threads=4
+                    n_threads=18
                 )
             except Exception as e:
                 return f"[Error loading model: {e}]"
@@ -58,9 +84,9 @@ def ask_llm(prompt, model_name=None):
         try:
             result = llama_model(
                 prompt,
-                max_tokens=512,
+                max_tokens=max_tokens,
                 stop=["</s>", "User:", "user:"],
-                temperature=llm_config.get("temperature", 0.7)
+                temperature=temperature
             )
             if isinstance(result, dict) and "choices" in result:
                 return result["choices"][0]["text"].strip()
@@ -70,9 +96,9 @@ def ask_llm(prompt, model_name=None):
                 return str(result)
         except Exception as e:
             return f"[Error during inference: {e}]"
-
     else:
         return "[Error: Unsupported LLM provider]"
+
 
 def get_available_models():
     return AVAILABLE_MODELS

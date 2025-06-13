@@ -35,6 +35,7 @@ models/*.gguf
 /assets/persona.json
 /assets/curie.jpg
 /scripts/insert_master.py
+/log
 *.pub
 *.key
 *.pem

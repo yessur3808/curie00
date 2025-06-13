@@ -21,6 +21,20 @@
     },
     {
       "type": "directory",
+      "name": "agent",
+      "contents": [
+        {
+          "type": "file",
+          "name": "__init__.py"
+        },
+        {
+          "type": "file",
+          "name": "core.py"
+        }
+      ]
+    },
+    {
+      "type": "directory",
       "name": "assets",
       "contents": [
         {
@@ -46,6 +60,11 @@
           "name": "telegram.py"
         }
       ]
+    },
+    {
+      "type": "directory",
+      "name": "log",
+      "contents": []
     },
     {
       "type": "directory",
@@ -123,13 +142,13 @@
         },
         {
           "type": "file",
+          "name": "session.py"
+        },
+        {
+          "type": "file",
           "name": "users.py"
         }
       ]
-    },
-    {
-      "type": "file",
-      "name": "agent.py"
     },
     {
       "type": "file",

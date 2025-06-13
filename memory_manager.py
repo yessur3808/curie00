@@ -1,3 +1,5 @@
+# memory_manager.py
+
 import os
 import uuid
 import psycopg2
@@ -5,6 +7,7 @@ from psycopg2.extras import DictCursor
 from pymongo import MongoClient
 from datetime import datetime
 from dotenv import load_dotenv
+import json
 
 load_dotenv()
 
@@ -75,7 +78,6 @@ def get_internal_id_by_secret_username(secret_username):
         cur.execute("SELECT internal_id FROM users WHERE secret_username ILIKE %s", (secret_username,))
         row = cur.fetchone()
         return str(row['internal_id']) if row else None
-    
     
 def get_or_create_user_internal_id(channel, external_id, secret_username=None, updated_by=None, is_master=False, roles=None):
     """
@@ -182,3 +184,28 @@ def search_research(topic, user_internal_id=None):
 
 def search_global_research(topic):
     return search_research(topic, user_internal_id=None)
+
+# --- User Profile (MongoDB) ---
+def get_user_profile(internal_id):
+    """Returns the 'facts' dict for this user, or an empty dict if not found."""
+    doc = mongo_db.user_profiles.find_one({"_id": str(internal_id)})
+    return doc.get("facts", {}) if doc and "facts" in doc else {}
+
+def update_user_profile(internal_id, new_facts: dict):
+    """
+    Adds/updates facts for the user in MongoDB.
+    Merges with any existing facts.
+    """
+    if not isinstance(new_facts, dict):
+        raise ValueError("new_facts must be a dict")
+    update = {}
+    for k, v in new_facts.items():
+        update[f"facts.{k}"] = v
+    mongo_db.user_profiles.update_one(
+        {"_id": str(internal_id)},
+        {
+            "$set": update,
+            "$currentDate": {"last_updated": True}
+        },
+        upsert=True
+    )

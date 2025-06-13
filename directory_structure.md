@@ -1,6 +1,6 @@
 # 🚀 Project Structure
 
-📅 Generated: 2025-06-13 21:11:09
+📅 Generated: 2025-06-14 04:06:25
 
 
 📁 
@@ -11,6 +11,10 @@
 
       📁 download
 
+  📁 agent
+    🐍 __init__.py
+    🐍 core.py
+
   📁 assets
     ⚙️ example_persona.json
     ⚙️ persona.json
@@ -18,6 +22,8 @@
   📁 connectors
     🐍 __init__.py
     🐍 telegram.py
+
+  📁 log
 
   📁 migrations
 
@@ -41,8 +47,8 @@
     🐍 __init__.py
     🐍 db.py
     🐍 persona.py
+    🐍 session.py
     🐍 users.py
-  🐍 agent.py
   ⚙️ directory_structure.json
   📝 directory_structure.md
   ⚙️ docker-compose.yml
