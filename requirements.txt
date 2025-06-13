@@ -2,3 +2,6 @@
 python-telegram-bot==21.4
 python-dotenv
 llama-cpp-python
+
+psycopg2-binary
+pymongo

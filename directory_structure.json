@@ -39,9 +39,18 @@
       "contents": [
         {
           "type": "file",
+          "name": "__init__.py"
+        },
+        {
+          "type": "file",
           "name": "telegram.py"
         }
       ]
+    },
+    {
+      "type": "directory",
+      "name": "migrations",
+      "contents": []
     },
     {
       "type": "directory",
@@ -72,17 +81,55 @@
       "contents": [
         {
           "type": "file",
+          "name": "apply_migrations.py"
+        },
+        {
+          "type": "file",
           "name": "dir_structure.py"
+        },
+        {
+          "type": "file",
+          "name": "down_migrations.py"
+        },
+        {
+          "type": "file",
+          "name": "gen_master_id.py"
+        },
+        {
+          "type": "file",
+          "name": "insert_master.py"
+        },
+        {
+          "type": "file",
+          "name": "insert_new_user.py"
+        }
+      ]
+    },
+    {
+      "type": "directory",
+      "name": "utils",
+      "contents": [
+        {
+          "type": "file",
+          "name": "__init__.py"
+        },
+        {
+          "type": "file",
+          "name": "db.py"
+        },
+        {
+          "type": "file",
+          "name": "persona.py"
+        },
+        {
+          "type": "file",
+          "name": "users.py"
         }
       ]
     },
     {
       "type": "file",
       "name": "agent.py"
-    },
-    {
-      "type": "file",
-      "name": "config.py"
     },
     {
       "type": "file",
@@ -94,11 +141,19 @@
     },
     {
       "type": "file",
+      "name": "docker-compose.yml"
+    },
+    {
+      "type": "file",
       "name": "llm_manager.py"
     },
     {
       "type": "file",
       "name": "main.py"
+    },
+    {
+      "type": "file",
+      "name": "memory_manager.py"
     },
     {
       "type": "file",

@@ -143,6 +143,10 @@ Desktop.ini
 *.gguf
 
 
+
 ./assets/persona.json
 ./assets/main_image.png
 ai_venv
+
+
+./scripts/insert_master.py

@@ -3,19 +3,34 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
 from agent import Agent
-import json
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+from utils.persona import load_persona       
+
+MASTER_USER_ID = os.getenv("MASTER_USER_ID")
+import memory_manager
+
+
+user_session_map = {}  # Maps telegram user_id to internal_id
+
 load_dotenv()
 
-def load_persona():
-    persona_path = os.path.join('assets', 'persona.json')
-    if os.path.isfile(persona_path):
-        with open(persona_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
+
+async def handle_identify(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tg_user_id = update.message.from_user.id
+    args = context.args if hasattr(context, 'args') else []
+    if not args:
+        await update.message.reply_text("Usage: /identify <your_secret_username>")
+        return
+
+    secret_username = args[0]
+    internal_id = memory_manager.get_internal_id_by_secret_username(secret_username)
+    if internal_id:
+        user_session_map[tg_user_id] = internal_id
+        await update.message.reply_text(f"✅ Identity linked to secret_username `{secret_username}`.")
+    else:
+        await update.message.reply_text("❌ No user found with that secret_username.")
 
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     greeting = context.bot_data['agent'].persona.get("greeting", "Hello!")
@@ -23,32 +38,120 @@ async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
-    user_id = update.message.from_user.id
+    tg_user_id = update.message.from_user.id
 
-    # You could use session/chat context here in later phases
-    agent_response = context.bot_data['agent'].handle_message(user_message, user_id=user_id)
+    # Check if the user has identified themselves this session
+    internal_id = user_session_map.get(tg_user_id)
+    if not internal_id:
+        # fallback to Telegram-based lookup/creation
+        telegram_username = update.message.from_user.username or f"telegram_{tg_user_id}"
+        internal_id = memory_manager.get_or_create_user_internal_id(
+            channel='telegram',
+            external_id=tg_user_id,
+            secret_username=telegram_username,
+            updated_by='telegram_bot'
+        )
+
+    agent_response = context.bot_data['agent'].handle_message(user_message, internal_id=internal_id)
     await update.message.reply_text(agent_response)
 
+# connectors/telegram.py
+
+from telegram import Update
+from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
+from agent import Agent
+import os
+from dotenv import load_dotenv
+
+from utils.persona import load_persona       
+
+MASTER_USER_ID = os.getenv("MASTER_USER_ID")
+import memory_manager
+
+
+user_session_map = {}  # Maps telegram user_id to internal_id
+
+load_dotenv()
+
+
+async def handle_identify(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tg_user_id = update.message.from_user.id
+    args = context.args if hasattr(context, 'args') else []
+    if not args:
+        await update.message.reply_text("Usage: /identify <your_secret_username>")
+        return
+
+    secret_username = args[0]
+    internal_id = memory_manager.get_internal_id_by_secret_username(secret_username)
+    if internal_id:
+        user_session_map[tg_user_id] = internal_id
+        await update.message.reply_text(f"✅ Identity linked to secret_username `{secret_username}`.")
+    else:
+        await update.message.reply_text("❌ No user found with that secret_username.")
+
+async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    greeting = context.bot_data['agent'].persona.get("greeting", "Hello!")
+    await update.message.reply_text(greeting)
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_message = update.message.text
+    tg_user_id = update.message.from_user.id
+
+    # Check if the user has identified themselves this session
+    internal_id = user_session_map.get(tg_user_id)
+    if not internal_id:
+        # fallback to Telegram-based lookup/creation
+        telegram_username = update.message.from_user.username or f"telegram_{tg_user_id}"
+        internal_id = memory_manager.get_or_create_user_internal_id(
+            channel='telegram',
+            external_id=tg_user_id,
+            secret_username=telegram_username,
+            updated_by='telegram_bot'
+        )
+
+    agent_response = context.bot_data['agent'].handle_message(user_message, internal_id=internal_id)
+    await update.message.reply_text(agent_response)
+
+async def handle_clear_memory(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tg_user_id = update.message.from_user.id
+    telegram_username = update.message.from_user.username or f"telegram_{tg_user_id}"
+    internal_id = memory_manager.get_or_create_user_internal_id(
+        channel='telegram',
+        external_id=tg_user_id,
+        secret_username=telegram_username,
+        updated_by='telegram_bot'
+    )
+
+    # Only allow master user
+    # Now checks by internal_id, not external Telegram ID
+    from utils.db import is_master_user
+    if not is_master_user(internal_id):
+        await update.message.reply_text("❌ You are not authorized to use this command.")
+        return
+    # Check for optional argument to clear all memory
+    args = context.args if hasattr(context, 'args') else []
+    if args and args[0] == "all":
+        memory_manager.clear_conversation()
+        await update.message.reply_text("🧹 All conversational memory cleared.")
+    else:
+        memory_manager.clear_conversation(internal_id)
+        await update.message.reply_text("🧹 Your conversational memory has been cleared.")
+
+
 def start_telegram_bot():
-    # Get Telegram token from environment variable
     telegram_token = os.getenv('TELEGRAM_BOT_TOKEN')
     if not telegram_token:
         raise RuntimeError("Telegram bot token not found in .env file or environment variables.")
 
-    # Load persona for this agent (optional)
     persona = load_persona()
     agent = Agent(persona=persona)
 
-    # Create the application
     app = ApplicationBuilder().token(telegram_token).build()
-
-    # Store the agent instance in bot_data for access in handlers
     app.bot_data['agent'] = agent
 
-    # Add command handler for /start
     app.add_handler(CommandHandler("start", handle_start))
-
-    # Add a message handler for text messages
+    app.add_handler(CommandHandler("identify", handle_identify))
+    app.add_handler(CommandHandler("clear_memory", handle_clear_memory))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     print("🤖 Telegram bot is running...")
