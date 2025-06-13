@@ -34,7 +34,6 @@ models/*.gguf
 # Sensitive Project Files (DO NOT COMMIT)
 /assets/persona.json
 /assets/curie.jpg
-/scripts/insert_master.py
 /log
 *.pub
 *.key
