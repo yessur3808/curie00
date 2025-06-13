@@ -1,107 +1,102 @@
-# Byte-compiled / optimized / compiled Python files
+### Python ###
+# Byte-compiled / optimized files
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
 
+# Virtual Environment
+.env
+.env.local
+.env.development
+.venv/
+env/
+venv/
+ENV/
+ai_venv/
+env.bak/
+venv.bak/
+
 # Distribution / packaging
-.Python
-build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+build/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
 
-# PyInstaller
-# Usually these files are written by a Python script from a template
-# before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+### Project Specific ###
+# Model files
+*.gguf
+models/*.bin
+models/*.gguf
+.cache/
+.cache/huggingface/
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
+# Sensitive Project Files (DO NOT COMMIT)
+/assets/persona.json
+/assets/curie.jpg
+/scripts/insert_master.py
+*.pub
+*.key
+*.pem
 
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
+# Database
+*.sqlite3
+*.sqlite3-journal
+*.db
 
-# Jupyter Notebook
-.ipynb_checkpoints
+### IDE and Editors ###
+# VSCode
+.vscode/
+*.code-workspace
 
 # PyCharm
 .idea/
 
-# VS Code
-.vscode/
-*.code-workspace
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
 
-# Environments
-.env
-.env.local
-.env.development
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# Django stuff:
+### Logs and Temp Files ###
+# Logs
+logs/
 *.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+pip-log.txt
 
-# Flask stuff:
-instance/
-.webassets-cache
+# Temp files
+*.tmp
+*.temp
+*.swp
+*.swo
 
-# Scrapy stuff:
-.scrapy
+### OS Generated Files ###
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
-# Sphinx documentation
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+### Testing and Coverage ###
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+
+### Documentation ###
 docs/_build/
+site/
 
-# PyBuilder
-target/
-
-# Jupyter Notebook checkpoints
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
+### Dependencies ###
+# pip
+pip-delete-this-directory.txt
 
 # mypy
 .mypy_cache/
@@ -111,42 +106,7 @@ dmypy.json
 # Pyre
 .pyre/
 
-# Celery beat schedule file
-celerybeat-schedule
-
-# dotenv
-*.env
-
-# PEP 582; used by e.g. pdm
-__pypackages__/
-
-# VS Code extension settings
-.vscode/settings.json
-.vscode/tasks.json
-.vscode/launch.json
-.vscode/extensions.json
-
-# macOS
-.DS_Store
-
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-
-# Linux
-*.swp
-*.swo
-
-*.log
-*.pub
-*.gguf
-
-
-
-./assets/persona.json
-./assets/main_image.png
-ai_venv
-
-
-./scripts/insert_master.py
+### Misc ###
+*.bak
+*.backup
+*.old
