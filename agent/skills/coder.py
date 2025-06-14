@@ -148,7 +148,7 @@ def apply_code_change(goal, files_to_edit, repo_path, branch_name):
     # --- Load configs ---
     GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
     MAIN_REPO = os.getenv("MAIN_REPO")
-    CODING_MODEL_NAME = os.getenv("CODING_MODEL_NAME", "codellama-34b-instruct.Q4_K_M.gguf")
+    CODING_MODEL_NAME = get_coding_model_name()
     GITHUB_REPO = extract_github_repo(MAIN_REPO)
     MAIN_REVIEWER = os.getenv("MAIN_REVIEWER")
     target_base = "main"
@@ -189,3 +189,56 @@ def apply_code_change(goal, files_to_edit, repo_path, branch_name):
     comment_ai_suggestions(pr, suggestions_md)
 
     return branch_name, changes, pr_url
+
+
+def get_coding_model_name():
+    coding_model = os.getenv("CODING_MODEL_NAME")
+    llm_models = llm.manager.AVAILABLE_MODELS
+
+    # Case 1: Model is set and valid
+    if coding_model and coding_model in llm_models:
+        return coding_model
+
+    # Case 2: Model is set but not available
+    if coding_model and coding_model not in llm_models:
+        print(f"Warning: CODING_MODEL_NAME '{coding_model}' is not found in LLM_MODELS ({llm_models}).")
+        # Prompt user for a model selection if running interactively
+        if llm_models:
+            print("Available models:")
+            for idx, model in enumerate(llm_models, start=1):
+                print(f"{idx}. {model}")
+            try:
+                choice = input("Select a model by number (or press Enter to abort): ").strip()
+                if choice and choice.isdigit() and 1 <= int(choice) <= len(llm_models):
+                    selected = llm_models[int(choice)-1]
+                    print(f"Using model: {selected}")
+                    return selected
+                else:
+                    print("Aborted by user.")
+                    exit(1)
+            except EOFError:
+                print("No input available. Aborting.")
+                exit(1)
+        else:
+            print("Error: No models are available in LLM_MODELS. Aborting.")
+            exit(1)
+
+    # Case 3: No coding model is set, but some models are available
+    if not coding_model and llm_models:
+        print(f"Warning: CODING_MODEL_NAME is not set. Available models: {llm_models}")
+        try:
+            choice = input("Select a model by number (or press Enter to abort): ").strip()
+            if choice and choice.isdigit() and 1 <= int(choice) <= len(llm_models):
+                selected = llm_models[int(choice)-1]
+                print(f"Using model: {selected}")
+                return selected
+            else:
+                print("Aborted by user.")
+                exit(1)
+        except EOFError:
+            print("No input available. Aborting.")
+            exit(1)
+
+    # Case 4: No models at all
+    print("Error: No models defined in .env (LLM_MODELS is empty). Aborting.")
+    exit(1)
