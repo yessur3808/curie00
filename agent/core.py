@@ -112,3 +112,30 @@ class Agent:
 
         small_talk = manager.ask_llm(prompt, temperature=0.9, max_tokens=60)
         return small_talk.strip()
+    
+    
+    
+    def handle_busy(self, internal_id):
+        set_busy_temporarily(internal_id)
+        return "D'accord! I'll let you focus for a while. I'll check in again later, mon ami."
+
+    def handle_resume(self, internal_id):
+        clear_user_busy(internal_id)
+        return "Bienvenue! I'm here and ready to chat again. 😊"
+
+    def handle_identify(self, secret_username, external_id, channel):
+        internal_id = UserManager.get_internal_id_by_secret_username(secret_username)
+        if internal_id:
+            # Optionally update mapping here if you wish
+            return True, f"✅ Identity linked to secret_username `{secret_username}`.", internal_id
+        else:
+            return False, "❌ No user found with that secret_username.", None
+
+    def get_or_create_internal_id(self, external_id, channel, secret_username=None):
+        # Always returns a valid internal_id for a user
+        return UserManager.get_or_create_user_internal_id(
+            channel=channel,
+            external_id=external_id,
+            secret_username=secret_username or f"{channel}_{external_id}",
+            updated_by=f'{channel}_bot'
+        )

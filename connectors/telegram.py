@@ -7,6 +7,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
 from agent.core import Agent
 
+from utils.busy import detect_busy_intent, detect_resume_intent, classify_intent_llm
 from utils.persona import load_persona
 from utils.session import (
     set_busy_temporarily,
@@ -71,38 +72,50 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
     tg_user_id = update.message.from_user.id
 
-    # Natural language triggers for busy/resume
+    agent = context.bot_data['agent']
+    telegram_username = update.message.from_user.username or f"telegram_{tg_user_id}"
+
+    internal_id = agent.get_or_create_internal_id(
+        external_id=tg_user_id,
+        channel='telegram',
+        secret_username=telegram_username
+    )
+
+    # --- Universal intent detection: first fast keyword, then LLM fallback ---
     message_lc = user_message.lower().strip()
-    if message_lc in ["stop i am busy", "i am busy", "stop"]:
-        set_busy_temporarily(tg_user_id)
-        await update.message.reply_text("D'accord! I'll give you some space for now.")
+    if detect_busy_intent(message_lc):
+        response = agent.handle_busy(internal_id)
+        await update.message.reply_text(response)
         return
-    if message_lc in ["resume", "i am free", "continue"]:
-        clear_user_busy(tg_user_id)
-        await update.message.reply_text("Heureuse de te retrouver! (Glad to have you back!)")
+    if detect_resume_intent(message_lc):
+        response = agent.handle_resume(internal_id)
+        await update.message.reply_text(response)
         return
 
-    # Check if the user has identified themselves this session
-    internal_id = user_session_map.get(tg_user_id)
-    if not internal_id:
-        # fallback to Telegram-based lookup/creation
-        telegram_username = update.message.from_user.username or f"telegram_{tg_user_id}"
-        internal_id = UserManager.get_or_create_user_internal_id(
-            channel='telegram',
-            external_id=tg_user_id,
-            secret_username=telegram_username,
-            updated_by='telegram_bot'
-        )
+    # If the message isn't caught by keywords, try LLM intent classification:
+    intent = classify_intent_llm(user_message)
+    if intent == "busy":
+        response = agent.handle_busy(internal_id)
+        await update.message.reply_text(response)
+        return
+    elif intent == "resume":
+        response = agent.handle_resume(internal_id)
+        await update.message.reply_text(response)
+        return
 
-    agent_response = context.bot_data['agent'].handle_message(user_message, internal_id=internal_id)
+    # --- Proceed with normal conversation ---
+    agent_response = agent.handle_message(user_message, internal_id=internal_id)
+    agent_response = clean_assistant_reply(agent_response)
     await update.message.reply_text(agent_response)
 
-    # Small talk logic: only send if not "busy" (or much less likely if busy)
+    # Small talk logic
     import random
-    if random.random() < small_talk_chance(tg_user_id):
-        small_talk = context.bot_data['agent'].generate_small_talk(internal_id)
+    if random.random() < small_talk_chance(internal_id):
+        small_talk = agent.generate_small_talk(internal_id)
         if small_talk:
+            small_talk = clean_assistant_reply(small_talk)
             await update.message.reply_text(small_talk)
+            
 
 async def handle_clear_memory(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tg_user_id = update.message.from_user.id
