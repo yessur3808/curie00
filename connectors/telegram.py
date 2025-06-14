@@ -15,7 +15,7 @@ from utils.session import (
     small_talk_chance,
 )
 
-import memory_manager
+from memory import UserManager, ConversationManager
 
 load_dotenv()
 
@@ -42,7 +42,7 @@ async def handle_identify(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     secret_username = args[0]
-    internal_id = memory_manager.get_internal_id_by_secret_username(secret_username)
+    internal_id = UserManager.get_internal_id_by_secret_username(secret_username)
     if internal_id:
         user_session_map[tg_user_id] = internal_id
         await update.message.reply_text(f"✅ Identity linked to secret_username `{secret_username}`.")
@@ -87,7 +87,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not internal_id:
         # fallback to Telegram-based lookup/creation
         telegram_username = update.message.from_user.username or f"telegram_{tg_user_id}"
-        internal_id = memory_manager.get_or_create_user_internal_id(
+        internal_id = UserManager.get_or_create_user_internal_id(
             channel='telegram',
             external_id=tg_user_id,
             secret_username=telegram_username,
@@ -107,7 +107,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_clear_memory(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tg_user_id = update.message.from_user.id
     telegram_username = update.message.from_user.username or f"telegram_{tg_user_id}"
-    internal_id = memory_manager.get_or_create_user_internal_id(
+    internal_id = UserManager.get_or_create_user_internal_id(
         channel='telegram',
         external_id=tg_user_id,
         secret_username=telegram_username,
@@ -123,10 +123,10 @@ async def handle_clear_memory(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Check for optional argument to clear all memory
     args = context.args if hasattr(context, 'args') else []
     if args and args[0] == "all":
-        memory_manager.clear_conversation()
+        ConversationManager.clear_conversation()
         await update.message.reply_text("🧹 All conversational memory cleared.")
     else:
-        memory_manager.clear_conversation(internal_id)
+        ConversationManager.clear_conversation(internal_id)
         await update.message.reply_text("🧹 Your conversational memory has been cleared.")
 
 def start_telegram_bot():

@@ -1,6 +1,6 @@
 # utils/users.py
 
-import memory_manager
+from memory import UserManager
 
 def get_or_create_internal_id_for_platform(platform, external_id, secret_username, updated_by, is_master=False, roles=None):
     """
@@ -8,7 +8,7 @@ def get_or_create_internal_id_for_platform(platform, external_id, secret_usernam
     If both searches fail, create a new user.
     """
     # 1. Try by external_id
-    internal_id = memory_manager.get_or_create_user_internal_id(
+    internal_id = UserManager.get_or_create_user_internal_id(
         channel=platform,
         external_id=external_id,
         secret_username=secret_username,
@@ -21,12 +21,12 @@ def get_or_create_internal_id_for_platform(platform, external_id, secret_usernam
 
     # 2. Try by secret_username (if provided)
     if secret_username:
-        internal_id_by_name = memory_manager.get_internal_id_by_secret_username(secret_username)
+        internal_id_by_name = UserManager.get_internal_id_by_secret_username(secret_username)
         if internal_id_by_name:
             return internal_id_by_name
 
     # 3. Create new user (if not found by either)
-    return memory_manager.get_or_create_user_internal_id(
+    return UserManager.get_or_create_user_internal_id(
         channel=platform,
         external_id=external_id,
         secret_username=secret_username,

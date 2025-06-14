@@ -63,8 +63,56 @@
     },
     {
       "type": "directory",
+      "name": "llm",
+      "contents": [
+        {
+          "type": "file",
+          "name": "__init__.py"
+        },
+        {
+          "type": "file",
+          "name": "manager.py"
+        }
+      ]
+    },
+    {
+      "type": "directory",
       "name": "log",
       "contents": []
+    },
+    {
+      "type": "directory",
+      "name": "memory",
+      "contents": [
+        {
+          "type": "file",
+          "name": "__init__.py"
+        },
+        {
+          "type": "file",
+          "name": "config.py"
+        },
+        {
+          "type": "file",
+          "name": "conversations.py"
+        },
+        {
+          "type": "file",
+          "name": "database.py"
+        },
+        {
+          "type": "file",
+          "name": "init.py"
+        },
+        {
+          "type": "file",
+          "name": "research.py"
+        },
+        {
+          "type": "file",
+          "name": "users.py"
+        }
+      ]
     },
     {
       "type": "directory",
@@ -152,6 +200,18 @@
     },
     {
       "type": "file",
+      "name": "CODE_OF_CONDUCT.md"
+    },
+    {
+      "type": "file",
+      "name": "CONTRIBUTING.md"
+    },
+    {
+      "type": "file",
+      "name": "CONTRIBUTORS.md"
+    },
+    {
+      "type": "file",
       "name": "directory_structure.json"
     },
     {
@@ -164,15 +224,7 @@
     },
     {
       "type": "file",
-      "name": "llm_manager.py"
-    },
-    {
-      "type": "file",
       "name": "main.py"
-    },
-    {
-      "type": "file",
-      "name": "memory_manager.py"
     },
     {
       "type": "file",

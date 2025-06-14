@@ -1,4 +1,4 @@
-#llm_manager.py
+# llm/manager.py
 
 import os
 from dotenv import load_dotenv
